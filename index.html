@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Gemini AI — Chat Assistant</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+    * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    body {
+      background: linear-gradient(145deg, #f9fafc 0%, #f1f4f9 100%);
+    }
+    .gemini-glow {
+      background: radial-gradient(circle at 30% 20%, rgba(139, 92, 246, 0.08), rgba(6, 182, 212, 0.02));
+    }
+    #chatHistory::-webkit-scrollbar { width: 4px; }
+    #chatHistory::-webkit-scrollbar-track { background: #eef2ff; border-radius: 10px; }
+    #chatHistory::-webkit-scrollbar-thumb { background: #a5b4fc; border-radius: 10px; }
+    .message-user {
+      background: linear-gradient(115deg, #1e293b 0%, #0f172a 100%);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .message-bot {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.03);
+      border: 1px solid #f0f2f5;
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-entry {
+      animation: fadeSlideUp 0.2s ease-out forwards;
+    }
+    .suggestion-bubble {
+      transition: all 0.2s ease;
+      border: 1px solid #eef2ff;
+    }
+    .suggestion-bubble:hover {
+      border-color: #c7d2fe;
+      background: #f5f3ff;
+      transform: translateY(-1px);
+    }
+    button:active { transform: scale(0.97); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-5">
+
+  <div class="w-full max-w-3xl flex justify-between items-center mb-5 px-1">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 bg-gradient-to-tr from-indigo-600 to-teal-500 rounded-xl flex items-center justify-center shadow-sm">
+        <span class="text-white text-lg font-bold">✨</span>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Gemini AI</h1>
+        <p class="text-[11px] font-medium text-gray-400">by Faujan · Advanced Intelligence</p>
+      </div>
+    </div>
+    <button onclick="toggleSettings()" class="text-gray-400 hover:text-indigo-600 transition-all p-2 rounded-full hover:bg-gray-100">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </button>
+  </div>
+
+  <div class="w-full max-w-3xl bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/40 overflow-hidden transition-all duration-300 gemini-glow">
+    
+    <div class="px-6 pt-5 pb-2 border-b border-gray-100 flex items-center gap-2">
+      <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-sm">
+        <span class="text-white text-[12px]">🧠</span>
+      </div>
+      <h2 class="text-sm font-semibold text-gray-700">Gemini <span class="text-indigo-500">Chat+</span></h2>
+      <span class="ml-auto text-[9px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium border border-emerald-100">online · fast response</span>
+    </div>
+
+    <div id="chatHistory" class="h-[60vh] md:h-[65vh] overflow-y-auto px-5 py-4 flex flex-col" style="scroll-behavior: smooth;">
+      <div id="welcomeContainer" class="flex flex-col items-center justify-center text-center py-8 space-y-4">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-100 to-purple-100 flex items-center justify-center text-3xl shadow-inner">✨</div>
+        <h3 class="text-xl font-bold text-gray-800">Gemini AI Assistant</h3>
+        <p class="text-sm text-gray-500 max-w-sm">Tanya apa saja — mulai dari ide, sains, coding, hingga saran harian. Cerdas, ramah, dan sigap.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full mt-3">
+          <button onclick="setInputText('Jelaskan teori relativitas dengan analogi sederhana')" class="suggestion-bubble text-left bg-white p-3 rounded-xl text-xs font-medium text-gray-700">📘 Jelaskan relativitas</button>
+          <button onclick="setInputText('Bantu saya menulis puisi tentang alam')" class="suggestion-bubble text-left bg-white p-3 rounded-xl text-xs font-medium text-gray-700">✍️ Puisi tentang alam</button>
+          <button onclick="setInputText('Resep masakan Indonesia yang mudah untuk pemula')" class="suggestion-bubble text-left bg-white p-3 rounded-xl text-xs font-medium text-gray-700">🍳 Resep pemula</button>
+          <button onclick="setInputText('Tips meningkatkan produktivitas kerja')" class="suggestion-bubble text-left bg-white p-3 rounded-xl text-xs font-medium text-gray-700">⚡ Produktivitas kerja</button>
+        </div>
+        <p class="text-[10px] text-gray-300 pt-2">✨ Gemini AI siap membantu Anda.</p>
+      </div>
+      
+      <div id="chatMessages" class="flex flex-col space-y-4"></div>
+    </div>
+
+    <div id="imagePreviewContainer" class="hidden mx-5 mb-2 bg-gray-50 p-2 rounded-xl border border-gray-200 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-3">
+        <img id="imagePreview" src="" alt="preview" class="w-10 h-10 rounded-lg object-cover border">
+        <span class="text-xs text-gray-500">Gambar siap dikirim</span>
+      </div>
+      <button onclick="removeImage()" class="text-gray-400 hover:text-red-500 text-sm px-2">✖ Hapus</button>
+    </div>
+
+    <div class="p-4 border-t border-gray-100 bg-white/70">
+      <div class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-2xl p-1.5 shadow-inner focus-within:border-indigo-300 focus-within:ring-1 focus-within:ring-indigo-200 transition">
+        <label class="w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-indigo-500 cursor-pointer transition bg-white/60">
+          📎
+          <input type="file" accept="image/*" class="hidden" onchange="previewImage(this)">
+        </label>
+        
+        <input type="text" id="userInput" placeholder="Ketik pesan untuk Gemini AI..." 
+               class="flex-1 h-10 bg-transparent text-sm px-2 focus:outline-none text-gray-700 font-medium">
+        
+        <div id="dynamicButtonArea" class="flex items-center gap-1">
+          <button id="sendButton" class="hidden w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md transition hover:bg-indigo-700">
+            ➤
+          </button>
+          <button id="voiceButton" onclick="simulateVoice()" class="w-9 h-9 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-500 text-white flex items-center justify-center shadow-sm">
+            🎤
+          </button>
+        </div>
+      </div>
+      <p class="text-[10px] text-center text-gray-400 mt-2">Gemini AI · model respons cepat & kontekstual</p>
+    </div>
+  </div>
+
+  <div id="settingsPanel" class="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-100">
+    <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+      <h2 class="font-bold text-gray-800">⚙️ Pengaturan Gemini</h2>
+      <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+    </div>
+    <div class="flex-1 p-5 space-y-6">
+      <div>
+        <label class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Endpoint AI (Perplexity-based)</label>
+        <div class="mt-2 text-xs bg-gray-50 p-3 rounded-xl font-mono text-indigo-600 break-all border">https://xters.us.kg/api/ai/perplexity</div>
+        <p class="text-[10px] text-gray-400 mt-1">Model terintegrasi · respons cepat</p>
+      </div>
+      <div>
+        <label class="text-[11px] font-bold uppercase tracking-wide text-gray-400">Preferensi Bahasa</label>
+        <select id="langSelect" class="w-full mt-2 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-300">
+          <option value="id">🇮🇩 Bahasa Indonesia</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="ko">🇰🇷 한국어</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="hi">🇮🇳 हिन्दी</option>
+        </select>
+      </div>
+      <div class="bg-indigo-50/40 p-4 rounded-xl">
+        <p class="text-xs font-semibold text-indigo-800">✨ Gemini AI · Duplikat Lanjutan</p>
+        <p class="text-[11px] text-gray-600 mt-1">Menggunakan teknologi perplexity-based API yang stabil. Dikembangkan oleh Faujan untuk kecepatan dan akurasi.</p>
+        <div class="mt-3 flex items-center gap-2 text-[11px] text-indigo-700">
+          <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> Status: API Active
+        </div>
+      </div>
+    </div>
+    <div class="p-5 border-t border-gray-100 text-[10px] text-gray-400 text-center">
+      Gemini AI Clone · Non-toxic & helpful
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://xters.us.kg/api/ai/perplexity";
+    
+    let currentImageBase64 = null;
+    let isWaitingResponse = false;
+
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    const welcomeContainer = document.getElementById('welcomeContainer');
+    const userInputField = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendButton');
+    const voiceBtn = document.getElementById('voiceButton');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    
+    function updateInputMode() {
+      const hasText = userInputField.value.trim().length > 0;
+      const hasImage = currentImageBase64 !== null;
+      if (hasText || hasImage) {
+        sendBtn.classList.remove('hidden');
+        voiceBtn.classList.add('hidden');
+      } else {
+        sendBtn.classList.add('hidden');
+        voiceBtn.classList.remove('hidden');
+      }
+    }
+
+    userInputField.addEventListener('input', updateInputMode);
+    
+    window.setInputText = function(text) {
+      userInputField.value = text;
+      updateInputMode();
+      userInputField.focus();
+    };
+    
+    window.previewImage = function(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          currentImageBase64 = e.target.result;
+          document.getElementById('imagePreview').src = currentImageBase64;
+          imagePreviewContainer.classList.remove('hidden');
+          updateInputMode();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    };
+    
+    window.removeImage = function() {
+      currentImageBase64 = null;
+      imagePreviewContainer.classList.add('hidden');
+      updateInputMode();
+    };
+    
+    function scrollChatToBottom() {
+      const container = document.getElementById('chatHistory');
+      setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+      }, 50);
+    }
+    
+    async function sendMessage() {
+      if (isWaitingResponse) return;
+      
+      let queryText = userInputField.value.trim();
+      if (!queryText && !currentImageBase64) return;
+      
+      if (welcomeContainer && !welcomeContainer.classList.contains('hidden')) {
+        welcomeContainer.classList.add('hidden');
+      }
+      
+      let userMessageHtml = `<div class="flex justify-end chat-entry">
+        <div class="max-w-[85%] bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-2xl rounded-br-none px-4 py-2.5 text-sm shadow-sm break-words">
+          ${escapeHtml(queryText)}
+          ${currentImageBase64 ? `<div class="mt-2"><img src="${currentImageBase64}" class="w-20 h-20 rounded-lg object-cover border border-white/30"></div>` : ''}
+        </div>
+      </div>`;
+      chatMessagesDiv.insertAdjacentHTML('beforeend', userMessageHtml);
+      
+      removeImage(); 
+      userInputField.value = '';
+      updateInputMode();
+      
+      const loadingId = 'loading_' + Date.now();
+      const loadingHtml = `<div id="${loadingId}" class="flex items-start gap-2 chat-entry">
+        <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex items-center justify-center shadow-sm text-white text-[12px]">🧠</div>
+        <div class="bg-white border border-gray-100 rounded-2xl rounded-tl-none px-4 py-2.5 shadow-sm">
+          <div class="flex space-x-1 items-center">
+            <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+            <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse delay-75"></span>
+            <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse delay-150"></span>
+            <span class="text-xs text-gray-500 ml-1">Gemini berpikir...</span>
+          </div>
+        </div>
+      </div>`;
+      chatMessagesDiv.insertAdjacentHTML('beforeend', loadingHtml);
+      scrollChatToBottom();
+      isWaitingResponse = true;
+      
+      try {
+        const url = `${API_BASE}?query=${encodeURIComponent(queryText)}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const jsonData = await response.json();
+        document.getElementById(loadingId)?.remove();
+        
+        // Fleksibilitas ekstra membaca variasi skema JSON API
+        let replyText = "";
+        if (jsonData.status === true && jsonData.data?.response?.answer) {
+          replyText = jsonData.data.response.answer;
+        } else if (jsonData.result) {
+          replyText = jsonData.result;
+        } else if (jsonData.message) {
+          replyText = jsonData.message;
+        } else if (typeof jsonData === 'string') {
+          replyText = jsonData;
+        } else {
+          replyText = "Maaf, saya tidak dapat menstrukturkan jawaban dengan benar. Silakan coba sesaat lagi.";
+        }
+        
+        const aiMessageHtml = `<div class="flex items-start gap-2 chat-entry">
+          <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex items-center justify-center shadow-sm text-white text-[12px]">✨</div>
+          <div class="bg-white border border-gray-100 rounded-2xl rounded-tl-none px-4 py-2.5 text-sm text-gray-800 max-w-[85%] shadow-sm leading-relaxed break-words">
+            ${formatReply(replyText)}
+          </div>
+        </div>`;
+        chatMessagesDiv.insertAdjacentHTML('beforeend', aiMessageHtml);
+        scrollChatToBottom();
+        
+      } catch (err) {
+        console.error(err);
+        document.getElementById(loadingId)?.remove();
+        const errorHtml = `<div class="flex items-start gap-2 chat-entry">
+          <div class="w-7 h-7 rounded-md bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 font-bold text-sm px-1.5">⚠️</div>
+          <div class="bg-white border border-red-100 rounded-2xl rounded-tl-none px-4 py-2.5 text-sm text-red-600 shadow-sm">
+            Terjadi gangguan koneksi. Periksa jaringan atau coba beberapa saat lagi.
+          </div>
+        </div>`;
+        chatMessagesDiv.insertAdjacentHTML('beforeend', errorHtml);
+        scrollChatToBottom();
+      } finally {
+        isWaitingResponse = false;
+      }
+    }
+    
+    window.simulateVoice = function() {
+      if (isWaitingResponse) return;
+      setInputText("Halo Gemini AI, berikan saya satu tips produktivitas singkat.");
+      sendMessage();
+    };
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+    
+    // Pemformatan Markdown Sederhana (Bold & Lists) agar mirip UI chat aslinya
+    function formatReply(text) {
+      if (!text) return '';
+      let formatted = escapeHtml(text);
+      
+      // Mengubah **teks** menjadi <strong>teks</strong>
+      formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>');
+      
+      // Mengubah baris bertanda * atau - menjadi Bullet point rapi
+      formatted = formatted.replace(/^\s*[\*\-]\s+(.*)$/gm, '<li class="list-disc ml-4 my-1">$1</li>');
+      
+      // Mengubah sisa baris baru menjadi tag break
+      return formatted.replace(/\n/g, '<br>');
+    }
+    
+    window.toggleSettings = function() {
+      const panel = document.getElementById('settingsPanel');
+      panel.classList.toggle('translate-x-full');
+    };
+    
+    sendBtn.addEventListener('click', sendMessage);
+    userInputField.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
